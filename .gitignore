@@ -1,0 +1,9 @@
+# Editor temporary file
+*~
+.*~
+*.sw[op]
+\#*#
+
+# Downloaded files and assets
+/assets/
+/scripts/downloads/
