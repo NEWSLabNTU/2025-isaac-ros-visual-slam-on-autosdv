@@ -3,6 +3,7 @@
   <!-- Launch arguments -->
   <arg name="base_frame" default="zed2_camera_center" description="Base frame for odometry"/>
   <arg name="camera_optical_frames" default="['zed2_left_camera_optical_frame', 'zed2_right_camera_optical_frame']" description="List of camera optical frames"/>
+  <arg name="start_rviz" default="false" description="Start RViz for visualization"/>
 
   <!-- Container with composable nodes -->
   <node_container pkg="rclcpp_components" exec="component_container" name="visual_slam_launch_container" namespace="">
@@ -36,4 +37,8 @@
     </composable_node>
 
   </node_container>
+
+  <!-- RViz visualization -->
+  <node pkg="rviz2" exec="rviz2" name="rviz2" if="$(var start_rviz)"
+        args="-d $(find-pkg-share isaac_ros_visual_slam)/rviz/default.cfg.rviz"/>
 </launch>
