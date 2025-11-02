@@ -1,15 +1,39 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="interface_specs_file" default="$(find-pkg-share slam_launch)/config/zed2_quickstart_interface_specs.json" />
-  <arg name="pub_frame_rate" default="30.0" />
-  <arg name="base_frame" default="zed2_camera_center" />
-  <arg name="camera_optical_frames" default="['zed2_left_camera_optical_frame', 'zed2_right_camera_optical_frame']" />
+  <!-- Launch arguments -->
+  <arg name="base_frame" default="zed2_camera_center" description="Base frame for odometry"/>
+  <arg name="camera_optical_frames" default="['zed2_left_camera_optical_frame', 'zed2_right_camera_optical_frame']" description="List of camera optical frames"/>
 
-  <include file="$(find-pkg-share isaac_ros_examples)/launch/isaac_ros_examples.launch.py">
-    <arg name="launch_fragments" value="zed_stereo_rect,visual_slam" />
-    <arg name="pub_frame_rate" value="$(var pub_frame_rate)" />
-    <arg name="base_frame" value="$(var base_frame)" />
-    <arg name="camera_optical_frames" value="$(var camera_optical_frames)" />
-    <arg name="interface_specs_file" value="$(var interface_specs_file)" />
-  </include>
+  <!-- Container with composable nodes -->
+  <node_container pkg="rclcpp_components" exec="component_container" name="visual_slam_launch_container" namespace="">
+
+    <!-- Left image format converter -->
+    <composable_node pkg="isaac_ros_image_proc" plugin="nvidia::isaac_ros::image_proc::ImageFormatConverterNode" name="image_format_node_left">
+      <param name="encoding_desired" value="mono8"/>
+      <remap from="image_raw" to="left/image_rect"/>
+      <remap from="image" to="left/image_rect_mono"/>
+    </composable_node>
+
+    <!-- Right image format converter -->
+    <composable_node pkg="isaac_ros_image_proc" plugin="nvidia::isaac_ros::image_proc::ImageFormatConverterNode" name="image_format_node_right">
+      <param name="encoding_desired" value="mono8"/>
+      <remap from="image_raw" to="right/image_rect"/>
+      <remap from="image" to="right/image_rect_mono"/>
+    </composable_node>
+
+    <!-- Visual SLAM node -->
+    <composable_node pkg="isaac_ros_visual_slam" plugin="nvidia::isaac_ros::visual_slam::VisualSlamNode" name="visual_slam_node">
+      <param name="rectified_images" value="True"/>
+      <param name="enable_slam_visualization" value="True"/>
+      <param name="enable_landmarks_view" value="True"/>
+      <param name="enable_observations_view" value="True"/>
+      <param name="camera_optical_frames" value="$(var camera_optical_frames)"/>
+      <param name="base_frame" value="$(var base_frame)"/>
+      <remap from="/visual_slam/image_0" to="left/image_rect_mono"/>
+      <remap from="/visual_slam/camera_info_0" to="left/camera_info_rect"/>
+      <remap from="/visual_slam/image_1" to="right/image_rect_mono"/>
+      <remap from="/visual_slam/camera_info_1" to="right/camera_info_rect"/>
+    </composable_node>
+
+  </node_container>
 </launch>
