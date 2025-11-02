@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="interface_specs_file" default="$(find-pkg-share slam_launch)/config/quickstart_interface_specs.json" />
+  <arg name="rectified_images" default="false" />
+
+  <include file="$(find-pkg-share isaac_ros_examples)/launch/isaac_ros_examples.launch.py">
+    <arg name="launch_fragments" value="visual_slam" />
+    <arg name="interface_specs_file" value="$(var interface_specs_file)" />
+    <arg name="rectified_images" value="$(var rectified_images)" />
+  </include>
+</launch>

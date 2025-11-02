@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="interface_specs_file" default="$(find-pkg-share slam_launch)/config/zed2_quickstart_interface_specs.json" />
+  <arg name="pub_frame_rate" default="30.0" />
+  <arg name="base_frame" default="zed2_camera_center" />
+  <arg name="camera_optical_frames" default="['zed2_left_camera_optical_frame', 'zed2_right_camera_optical_frame']" />
+
+  <include file="$(find-pkg-share isaac_ros_examples)/launch/isaac_ros_examples.launch.py">
+    <arg name="launch_fragments" value="zed_stereo_rect,visual_slam" />
+    <arg name="pub_frame_rate" value="$(var pub_frame_rate)" />
+    <arg name="base_frame" value="$(var base_frame)" />
+    <arg name="camera_optical_frames" value="$(var camera_optical_frames)" />
+    <arg name="interface_specs_file" value="$(var interface_specs_file)" />
+  </include>
+</launch>
