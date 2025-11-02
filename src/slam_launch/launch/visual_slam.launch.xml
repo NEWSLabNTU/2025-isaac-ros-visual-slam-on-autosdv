@@ -11,6 +11,8 @@
 
     <!-- Left image format converter -->
     <composable_node pkg="isaac_ros_image_proc" plugin="nvidia::isaac_ros::image_proc::ImageFormatConverterNode" name="image_format_node_left">
+      <param name="image_width" value="1920"/>
+      <param name="image_height" value="1200"/>
       <param name="encoding_desired" value="mono8"/>
       <remap from="image_raw" to="left/image_rect"/>
       <remap from="image" to="left/image_rect_mono"/>
@@ -18,6 +20,8 @@
 
     <!-- Right image format converter -->
     <composable_node pkg="isaac_ros_image_proc" plugin="nvidia::isaac_ros::image_proc::ImageFormatConverterNode" name="image_format_node_right">
+      <param name="image_width" value="1920"/>
+      <param name="image_height" value="1200"/>
       <param name="encoding_desired" value="mono8"/>
       <remap from="image_raw" to="right/image_rect"/>
       <remap from="image" to="right/image_rect_mono"/>
