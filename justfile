@@ -100,6 +100,39 @@ install-deps: check-sudo rosdep-update
 download-assets:
     @bash scripts/download_assets.sh
 
+play-bag:
+    #!/usr/bin/env bash
+    source /opt/ros/humble/setup.bash
+    ros2 bag play assets/isaac_ros_visual_slam/quickstart_bag --remap \
+        /front_stereo_camera/left/image_raw:=/left/image_rect \
+        /front_stereo_camera/left/camera_info:=/left/camera_info_rect \
+        /front_stereo_camera/right/image_raw:=/right/image_rect \
+        /front_stereo_camera/right/camera_info:=/right/camera_info_rect \
+        /back_stereo_camera/left/image_raw:=/rear_left/image_rect \
+        /back_stereo_camera/left/camera_info:=/rear_left/camera_info_rect \
+        /back_stereo_camera/right/image_raw:=/rear_right/image_rect \
+        /back_stereo_camera/right/camera_info:=/rear_right/camera_info_rect
+
+launch:
+    #!/usr/bin/env bash
+    source /opt/ros/humble/setup.bash
+    source install/setup.bash
+    if [ -n "$DISPLAY" ]; then
+        ros2 launch slam_launch visual_slam.launch.xml start_rviz:=true
+    else
+        ros2 launch slam_launch visual_slam.launch.xml start_rviz:=false
+    fi
+
+launch-zed2:
+    #!/usr/bin/env bash
+    source /opt/ros/humble/setup.bash
+    source install/setup.bash
+    if [ -n "$DISPLAY" ]; then
+        ros2 launch slam_launch zed2_visual_slam.launch.xml start_rviz:=true
+    else
+        ros2 launch slam_launch zed2_visual_slam.launch.xml start_rviz:=false
+    fi
+
 build:
     @colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 
