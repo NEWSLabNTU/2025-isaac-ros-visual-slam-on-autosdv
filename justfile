@@ -196,7 +196,8 @@ setup: check-sudo check-system
     [ ! -d /opt/ros/humble ] && just install-ros
     ! grep -rq "isaac" /etc/apt/sources.list.d/ 2>/dev/null && just install-isaac-repo
     just install-deps
+    just download-assets
 
     echo ""
     echo "Setup complete"
-    echo "Next: source /opt/ros/humble/setup.bash && just download-assets && just build"
+    echo "Next: source /opt/ros/humble/setup.bash && just build"
