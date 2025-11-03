@@ -17,29 +17,7 @@
   <!-- Container with composable nodes -->
   <node_container pkg="rclcpp_components" exec="component_container" name="visual_slam_launch_container" namespace="">
 
-    <!-- Left image format converter -->
-    <composable_node pkg="isaac_ros_image_proc" plugin="nvidia::isaac_ros::image_proc::ImageFormatConverterNode" name="image_format_node_left">
-      <param name="image_width" value="960"/>
-      <param name="image_height" value="600"/>
-      <param name="encoding_desired" value="mono8"/>
-      <param name="input_qos" value="SENSOR_DATA"/>
-      <param name="output_qos" value="SENSOR_DATA"/>
-      <remap from="image_raw" to="/$(var camera_name)/zed_node/left_gray/image_rect_gray"/>
-      <remap from="image" to="left/image_rect"/>
-    </composable_node>
-
-    <!-- Right image format converter -->
-    <composable_node pkg="isaac_ros_image_proc" plugin="nvidia::isaac_ros::image_proc::ImageFormatConverterNode" name="image_format_node_right">
-      <param name="image_width" value="960"/>
-      <param name="image_height" value="600"/>
-      <param name="encoding_desired" value="mono8"/>
-      <param name="input_qos" value="SENSOR_DATA"/>
-      <param name="output_qos" value="SENSOR_DATA"/>
-      <remap from="image_raw" to="/$(var camera_name)/zed_node/right_gray/image_rect_gray"/>
-      <remap from="image" to="right/image_rect"/>
-    </composable_node>
-
-    <!-- Visual SLAM node -->
+    <!-- Visual SLAM node - Direct NITROS connection to ZED camera -->
     <composable_node pkg="isaac_ros_visual_slam" plugin="nvidia::isaac_ros::visual_slam::VisualSlamNode" name="visual_slam_node">
       <param name="rectified_images" value="True"/>
       <param name="enable_slam_visualization" value="True"/>
@@ -47,9 +25,10 @@
       <param name="enable_observations_view" value="True"/>
       <param name="camera_optical_frames" value="$(var camera_optical_frames)"/>
       <param name="base_frame" value="$(var base_frame)"/>
-      <remap from="/visual_slam/image_0" to="left/image_rect"/>
+      <!-- Direct NITROS connection to ZED camera topics for zero-copy GPU transfer -->
+      <remap from="/visual_slam/image_0" to="/$(var camera_name)/zed_node/left_gray/image_rect_gray"/>
       <remap from="/visual_slam/camera_info_0" to="/$(var camera_name)/zed_node/left_gray/camera_info"/>
-      <remap from="/visual_slam/image_1" to="right/image_rect"/>
+      <remap from="/visual_slam/image_1" to="/$(var camera_name)/zed_node/right_gray/image_rect_gray"/>
       <remap from="/visual_slam/camera_info_1" to="/$(var camera_name)/zed_node/right_gray/camera_info"/>
     </composable_node>
 
