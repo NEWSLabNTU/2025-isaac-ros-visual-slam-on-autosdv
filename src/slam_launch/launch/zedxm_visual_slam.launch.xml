@@ -43,9 +43,9 @@
       <param name="camera_optical_frames" value="$(var camera_optical_frames)"/>
       <param name="base_frame" value="$(var base_frame)"/>
       <remap from="/visual_slam/image_0" to="left/image_rect"/>
-      <remap from="/visual_slam/camera_info_0" to="/$(var camera_name)/zed_node/left/camera_info"/>
+      <remap from="/visual_slam/camera_info_0" to="/$(var camera_name)/zed_node/left_gray/camera_info"/>
       <remap from="/visual_slam/image_1" to="right/image_rect"/>
-      <remap from="/visual_slam/camera_info_1" to="/$(var camera_name)/zed_node/right/camera_info"/>
+      <remap from="/visual_slam/camera_info_1" to="/$(var camera_name)/zed_node/right_gray/camera_info"/>
     </composable_node>
 
   </node_container>
