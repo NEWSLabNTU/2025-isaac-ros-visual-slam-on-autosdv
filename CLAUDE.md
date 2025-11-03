@@ -1,161 +1,244 @@
 # Project Context for Claude
 
 ## Overview
-This is a ROS2 SLAM workspace using NVIDIA Isaac ROS Visual SLAM on Ubuntu 22.04 / Jetson platform.
+ROS2 SLAM workspace using NVIDIA Isaac ROS Visual SLAM (cuVSLAM 12.6) with ZED X Mini stereo camera on Ubuntu 22.04 / Jetson platform.
 
 ## Project Structure
 
 ```
 slam/
 ├── justfile                 # Build automation (replaces Makefile)
-├── .envrc                   # Auto-sources ROS Humble when entering directory (direnv)
+├── .envrc                   # Auto-sources ROS Humble + network config checks (direnv)
+├── cyclonedds.xml           # Cyclone DDS configuration for reliable data transfer
+├── CLAUDE.md                # This file
+├── README.md                # Project overview
 ├── scripts/
 │   ├── setup.sh            # System setup script
 │   └── download_assets.sh  # Downloads Isaac ROS Visual SLAM assets
+├── docs/
+│   └── ZEDXM_SETUP.md      # ZED X Mini setup guide (minimalist style)
 ├── src/
-│   └── slam_launch/        # Custom ROS2 package
-│       ├── launch/
-│       │   ├── visual_slam.launch.xml        # Basic visual SLAM launch
-│       │   └── zed2_visual_slam.launch.xml   # ZED2 camera launch
-│       └── config/
-│           ├── quickstart_interface_specs.json
-│           └── zed2_quickstart_interface_specs.json
-└── assets/                  # Downloaded SLAM assets (rosbag, configs)
+│   ├── slam_launch/        # Custom ROS2 package
+│   │   ├── launch/
+│   │   │   ├── visual_slam.launch.xml        # Basic visual SLAM (rosbag)
+│   │   │   └── zedxm_visual_slam.launch.xml  # ZED X Mini camera
+│   │   └── config/
+│   │       ├── quickstart_interface_specs.json       # For rosbag
+│   │       └── zedxm_quickstart_interface_specs.json # ZED X Mini: 960x600
+│   └── zed-ros2-wrapper/   # ZED SDK ROS2 wrapper (git submodule)
+├── assets/                  # Downloaded SLAM assets (rosbag, configs)
+├── play_log/                # Detailed logs from play-zedxm runs
+└── build/, install/, log/   # ROS2 workspace artifacts
 ```
 
 ## Key Setup Details
 
 ### System Requirements
 - Ubuntu 22.04
-- ROS Humble installed at `/opt/ros/humble`
-- Isaac ROS packages installed via APT
-- NVIDIA GPU with CUDA support
+- ROS 2 Humble installed at `/opt/ros/humble`
+- Isaac ROS packages (APT): `isaac_ros_visual_slam`, `isaac_ros_image_proc`
+- ZED SDK 5.0.7+ (for ZED X Mini support)
+- NVIDIA Jetson with CUDA support
 
 ### Build System
-Uses **Just** (modern Make alternative) instead of Makefile.
-- Justfile is minimalist style (no emojis, concise output)
-- All recipes source ROS automatically
+Uses **Just** (modern Make alternative):
+- Minimalist style (no emojis, concise output)
+- All recipes source ROS automatically via `.envrc`
 
 ### Important Files
 
 **justfile** - Main automation:
-- `just setup` - System setup (checks Ubuntu version, installs ROS/deps)
-- `just build` - Builds workspace with Release mode
+- `just setup` - System setup (Ubuntu version check, ROS install)
+- `just build` - Builds workspace (Release mode)
 - `just clean` - Removes build artifacts
-- `just launch` - Launches visual SLAM (auto-starts RViz if DISPLAY set)
-- `just launch-zed2` - Launches with ZED2 camera
-- `just play-bag` - Plays rosbag with topic remapping
+- `just launch` - Launches visual SLAM with rosbag (auto-starts RViz if DISPLAY set)
+- `just launch-zedxm` - Launches ZED X Mini + Visual SLAM (auto-starts RViz)
+- `just play` - Plays rosbag with topic remapping
+- `just play-zedxm` - Runs launch-zedxm with detailed logging to `play_log/`
 - `just rosdep-update` - Updates rosdep database
 - `just download-assets` - Downloads SLAM assets
 
-**Launch Files** (XML format):
-- Use composable nodes for zero-copy communication
-- Include image format converters (RGB to mono8)
-- Conditionally start RViz based on `start_rviz` argument
-- Auto-detect DISPLAY in justfile targets
-
-**.envrc**:
+**.envrc** (direnv):
 - Sources `/opt/ros/humble/setup.bash` when entering directory
-- Shows warning if ROS not installed
-- Requires `direnv` to be installed and enabled
+- Sets `RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`
+- Sets `CYCLONEDDS_URI` to project's `cyclonedds.xml`
+- Validates network configuration (multicast, kernel buffers)
+- Shows warnings with documentation links if config missing
+- Requires: `direnv allow` after first clone
+
+**cyclonedds.xml**:
+- Configures DDS for reliable image/point cloud transfer
+- Uses loopback interface (multicast required)
+- Large receive buffers (10MB) and high watermarks (500kB)
+- Based on Autoware network recommendations
+
+**docs/ZEDXM_SETUP.md**:
+- Comprehensive ZED X Mini setup guide
+- Network configuration (multicast, kernel params)
+- Architecture explanation (ZED → ImageFormatConverter → Visual SLAM)
+- Troubleshooting common issues
+- Written in minimalist style
 
 ## Dependencies
 
 ### APT Packages
 - `ros-humble-desktop` - ROS 2 Humble with tools
-- `ros-dev-tools` - Development tools
-- `isaac_ros_visual_slam` - Visual SLAM node
-- `isaac_ros_image_proc` - Image processing nodes
-- `curl`, `jq`, `tar` - Utilities
+- `ros-dev-tools` - Development tools (colcon, rosdep)
+- `isaac_ros_visual_slam` - Visual SLAM node (cuVSLAM)
+- `isaac_ros_image_proc` - Image format converter (NITROS)
+- ZED SDK from Stereolabs (not in APT)
 
-### Python Dependencies
-- rosdep
+### Git Submodules
+- `zed-ros2-wrapper` - ZED camera ROS2 driver
 
 ## Current State
 
 ### What Works
-- Full workspace builds successfully
-- Launch files start visual SLAM with composable nodes
-- RViz auto-starts when DISPLAY is available
-- Topic remapping for rosbag playback configured
-- Image format conversion (RGB→mono8) integrated
+- ZED X Mini + Isaac ROS Visual SLAM integration
+- Grayscale stereo images at 960x600 @ 15Hz
+- NITROS zero-copy communication in composable nodes
+- ImageFormatConverter: mono8 → nitros_image_mono8
+- RViz auto-start based on DISPLAY environment
+- Network configuration validation on direnv load
+- Detailed play logs with timestamps
 
-### What's Not Set Up
-- Isaac ROS APT repository (requires manual setup - see justfile comments)
-- ZED2 camera driver configuration
-- Actual rosbag testing with data playback
+### Configuration
 
-## Configuration Notes
+**ZED X Mini Camera**:
+- Resolution: 960x600 @ 15Hz (downscaled 2x from native 1920x1200)
+- Topics:
+  - `/zedxm/zed_node/left_gray/image_rect_gray` (mono8)
+  - `/zedxm/zed_node/right_gray/image_rect_gray` (mono8)
+  - `/zedxm/zed_node/left/camera_info`
+  - `/zedxm/zed_node/right/camera_info`
+- Frames:
+  - `zedxm_camera_center` (base_frame)
+  - `zedxm_left_camera_optical_frame`
+  - `zedxm_right_camera_optical_frame`
 
-### Visual SLAM Parameters
-Both launch files configure:
-- `rectified_images`: False for basic launch, True for ZED2
+**Visual SLAM Parameters** (`zedxm_visual_slam.launch.xml`):
+- `rectified_images`: True (ZED publishes rectified images)
 - `enable_slam_visualization`: True
 - `enable_landmarks_view`: True
 - `enable_observations_view`: True
-- Configurable `base_frame` and `camera_optical_frames`
+- `camera_optical_frames`: List of left/right optical frames
+- `base_frame`: Camera center frame for odometry
 
-### Topic Remapping
-Rosbag topics remapped in `play-bag` target:
-- Front stereo camera: `/front_stereo_camera/{left,right}/*` → `/{left,right}/*`
-- Back stereo camera: `/back_stereo_camera/{left,right}/*` → `/rear_{left,right}/*`
+**Image Pipeline**:
+```
+ZED Camera (mono8) → ImageFormatConverterNode (nitros_image_mono8) → Visual SLAM
+```
 
-### Build Configuration
-- Uses `--symlink-install` for faster development
-- Release build (`-DCMAKE_BUILD_TYPE=Release`) for performance
-- colcon builds only the `slam_launch` package
+All nodes run in same `component_container` for zero-copy NITROS communication.
+
+## Important Technical Details
+
+### cuVSLAM Image Format Requirements
+**Isaac ROS Visual SLAM requires grayscale (mono8) images.** Color images are NOT supported.
+
+Evidence:
+- Official NVIDIA examples disable color cameras (`enable_color: False`)
+- RealSense example uses infrared (grayscale) topics only
+- Community discussions confirm "Isaac Visual SLAM takes in mono8 rectified images"
+- Attempting color conversion results in:
+  ```
+  ERROR: invalid input/output type for image color conversion
+  CAMERA STREAM FAILED TO START
+  ```
+
+Visual SLAM algorithms perform feature detection/tracking on intensity values. Color information provides no benefit and is incompatible with cuVSLAM's internal processing.
+
+### Network Configuration
+Required for reliable DDS communication with large messages (images, point clouds):
+
+**Multicast on loopback**:
+```bash
+sudo ip link set lo multicast on
+```
+
+**Kernel parameters** (`/etc/sysctl.conf` or `/etc/sysctl.d/10-cyclone-max.conf`):
+```
+net.core.rmem_max=2147483647
+net.ipv4.ipfrag_time=3
+net.ipv4.ipfrag_high_thresh=134217728
+```
+
+`.envrc` validates these on directory entry and shows warnings if missing.
+
+See: https://autowarefoundation.github.io/autoware-documentation/main/installation/additional-settings-for-developers/network-configuration/
 
 ## Common Tasks
 
 ### First Time Setup
 ```bash
-just setup          # Install all dependencies
-just download-assets # Get SLAM assets/rosbag
-just build          # Build workspace
+direnv allow              # Enable .envrc
+just setup                # Install dependencies
+just build                # Build workspace
+```
+
+### ZED X Mini Usage
+```bash
+just launch-zedxm         # Launch camera + SLAM (RViz auto-starts)
+just play-zedxm           # Launch with detailed logs in play_log/
+```
+
+### Rosbag Testing
+```bash
+just download-assets      # Get test rosbag
+just launch               # Terminal 1: Start Visual SLAM
+just play                 # Terminal 2: Play rosbag
 ```
 
 ### Development Workflow
 ```bash
-just build          # After code changes
-just launch         # Test visual SLAM
-just play-bag       # Play rosbag in another terminal
-```
-
-### Clean Build
-```bash
-just clean
+# After editing launch files or code:
 just build
+just launch-zedxm
 ```
 
 ## Troubleshooting
 
 ### ROS not found
-- Check if `/opt/ros/humble` exists
+- Check: `ls /opt/ros/humble`
 - Source manually: `source /opt/ros/humble/setup.bash`
-- Or use direnv: `direnv allow`
+- Or: `direnv allow` (loads `.envrc`)
+
+### Network warnings on directory entry
+Fix using commands in docs/ZEDXM_SETUP.md "Network Configuration" section.
 
 ### Build fails
-- Run `just rosdep-update` first
-- Check if all Isaac ROS packages installed: `ros2 pkg list | grep isaac`
+```bash
+just rosdep-update
+ros2 pkg list | grep isaac    # Verify Isaac ROS installed
+```
 
-### Launch fails
-- Ensure workspace is built: `just build`
-- Check if sourced: `source install/setup.bash` (justfile does this automatically)
+### ZED camera not detected
+```bash
+/usr/local/zed/tools/ZED_Diagnostic    # Run ZED diagnostics
+```
 
-### RViz doesn't start
-- Check DISPLAY: `echo $DISPLAY`
-- Force RViz: `ros2 launch slam_launch visual_slam.launch.xml start_rviz:=true`
+### Visual SLAM not tracking
+- Requires camera motion to initialize
+- Move camera slowly with both rotation and translation
+- Ensure sufficient visual features in environment
 
-## Next Steps / TODO
+### "Could not negotiate" warnings
+- Normal during startup while NITROS negotiates formats
+- Warnings should stop after all nodes initialize
 
-1. Test with actual rosbag playback
-2. Verify visual SLAM tracking works
-3. Configure ZED2 camera if available
-4. Tune SLAM parameters for your environment
-5. Set up map saving/loading if needed
+### Color image errors
+- Visual SLAM only supports mono8 grayscale
+- Do NOT use `image_rect_color` topics
+- Use `left_gray/image_rect_gray` and `right_gray/image_rect_gray`
 
 ## References
 
-- Isaac ROS Visual SLAM Docs: https://nvidia-isaac-ros.github.io/v/release-3.2/repositories_and_packages/isaac_ros_visual_slam/
-- ROS 2 Launch XML Format: https://docs.ros.org/en/humble/How-To-Guides/Launch-file-different-formats.html
+- Isaac ROS Visual SLAM: https://nvidia-isaac-ros.github.io/v/release-3.2/repositories_and_packages/isaac_ros_visual_slam/
+- ZED ROS2 Wrapper: https://www.stereolabs.com/docs/ros2/zed-node
+- Autoware DDS Settings: https://autowarefoundation.github.io/autoware-documentation/main/installation/additional-settings-for-developers/network-configuration/
 - Just Manual: https://just.systems/man/en/
+- ROS 2 Launch XML: https://docs.ros.org/en/humble/How-To-Guides/Launch-file-different-formats.html
+
+---
+
+**Last Updated**: 2025-11-04 | Isaac ROS 3.2 | ZED SDK 5.0.7 | ROS 2 Humble
