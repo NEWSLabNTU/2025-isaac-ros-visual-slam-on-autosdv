@@ -21,6 +21,8 @@
       <param name="image_width" value="960"/>
       <param name="image_height" value="600"/>
       <param name="encoding_desired" value="mono8"/>
+      <param name="input_qos" value="SENSOR_DATA"/>
+      <param name="output_qos" value="SENSOR_DATA"/>
       <remap from="image_raw" to="/$(var camera_name)/zed_node/left_gray/image_rect_gray"/>
       <remap from="image" to="left/image_rect"/>
     </composable_node>
@@ -30,6 +32,8 @@
       <param name="image_width" value="960"/>
       <param name="image_height" value="600"/>
       <param name="encoding_desired" value="mono8"/>
+      <param name="input_qos" value="SENSOR_DATA"/>
+      <param name="output_qos" value="SENSOR_DATA"/>
       <remap from="image_raw" to="/$(var camera_name)/zed_node/right_gray/image_rect_gray"/>
       <remap from="image" to="right/image_rect"/>
     </composable_node>
