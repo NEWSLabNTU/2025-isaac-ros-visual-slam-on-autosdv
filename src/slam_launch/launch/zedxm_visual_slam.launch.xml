@@ -56,5 +56,5 @@
 
   <!-- RViz visualization -->
   <node pkg="rviz2" exec="rviz2" name="rviz2" if="$(var start_rviz)"
-        args="-d $(find-pkg-share isaac_ros_visual_slam)/rviz/default.cfg.rviz"/>
+        args="-d $(find-pkg-share slam_launch)/rviz/isaac_zedxm.rviz"/>
 </launch>
