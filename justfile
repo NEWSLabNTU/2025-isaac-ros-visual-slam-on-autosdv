@@ -123,14 +123,15 @@ launch:
         ros2 launch slam_launch visual_slam.launch.xml start_rviz:=false
     fi
 
-launch-zed2:
+launch-zedxm:
     #!/usr/bin/env bash
     source /opt/ros/humble/setup.bash
     source install/setup.bash
     if [ -n "$DISPLAY" ]; then
-        ros2 launch slam_launch zed2_visual_slam.launch.xml start_rviz:=true
+        ros2 launch slam_launch zedxm_visual_slam.launch.xml start_rviz:=true
     else
-        ros2 launch slam_launch zed2_visual_slam.launch.xml start_rviz:=false
+        ros2 launch slam_launch zedxm_visual_slam.launch.xml start_rviz:=false
+    fi
     fi
 
 build:

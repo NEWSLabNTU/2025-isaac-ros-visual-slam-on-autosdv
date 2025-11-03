@@ -1,29 +1,37 @@
 <?xml version="1.0"?>
 <launch>
   <!-- Launch arguments -->
-  <arg name="base_frame" default="zed2_camera_center" description="Base frame for odometry"/>
-  <arg name="camera_optical_frames" default="['zed2_left_camera_optical_frame', 'zed2_right_camera_optical_frame']" description="List of camera optical frames"/>
+  <arg name="base_frame" default="zedxm_camera_center" description="Base frame for odometry"/>
+  <arg name="camera_optical_frames" default="['zedxm_left_camera_optical_frame', 'zedxm_right_camera_optical_frame']" description="List of camera optical frames"/>
   <arg name="start_rviz" default="false" description="Start RViz for visualization"/>
+  <arg name="camera_name" default="zedxm" description="Camera name for namespacing"/>
+
+  <!-- Launch ZED X Mini camera node -->
+  <include file="$(find-pkg-share zed_wrapper)/launch/zed_camera.launch.py">
+    <arg name="camera_model" value="zedxm"/>
+    <arg name="camera_name" value="$(var camera_name)"/>
+    <arg name="enable_ipc" value="false"/>
+  </include>
 
   <!-- Container with composable nodes -->
   <node_container pkg="rclcpp_components" exec="component_container" name="visual_slam_launch_container" namespace="">
 
     <!-- Left image format converter -->
     <composable_node pkg="isaac_ros_image_proc" plugin="nvidia::isaac_ros::image_proc::ImageFormatConverterNode" name="image_format_node_left">
-      <param name="image_width" value="1280"/>
-      <param name="image_height" value="720"/>
+      <param name="image_width" value="960"/>
+      <param name="image_height" value="600"/>
       <param name="encoding_desired" value="mono8"/>
-      <remap from="image_raw" to="left/image_rect"/>
-      <remap from="image" to="left/image_rect_mono"/>
+      <remap from="image_raw" to="/$(var camera_name)/zed_node/left_gray/image_rect_gray"/>
+      <remap from="image" to="left/image_rect"/>
     </composable_node>
 
     <!-- Right image format converter -->
     <composable_node pkg="isaac_ros_image_proc" plugin="nvidia::isaac_ros::image_proc::ImageFormatConverterNode" name="image_format_node_right">
-      <param name="image_width" value="1280"/>
-      <param name="image_height" value="720"/>
+      <param name="image_width" value="960"/>
+      <param name="image_height" value="600"/>
       <param name="encoding_desired" value="mono8"/>
-      <remap from="image_raw" to="right/image_rect"/>
-      <remap from="image" to="right/image_rect_mono"/>
+      <remap from="image_raw" to="/$(var camera_name)/zed_node/right_gray/image_rect_gray"/>
+      <remap from="image" to="right/image_rect"/>
     </composable_node>
 
     <!-- Visual SLAM node -->
@@ -34,10 +42,10 @@
       <param name="enable_observations_view" value="True"/>
       <param name="camera_optical_frames" value="$(var camera_optical_frames)"/>
       <param name="base_frame" value="$(var base_frame)"/>
-      <remap from="/visual_slam/image_0" to="left/image_rect_mono"/>
-      <remap from="/visual_slam/camera_info_0" to="left/camera_info_rect"/>
-      <remap from="/visual_slam/image_1" to="right/image_rect_mono"/>
-      <remap from="/visual_slam/camera_info_1" to="right/camera_info_rect"/>
+      <remap from="/visual_slam/image_0" to="left/image_rect"/>
+      <remap from="/visual_slam/camera_info_0" to="/$(var camera_name)/zed_node/left/camera_info"/>
+      <remap from="/visual_slam/image_1" to="right/image_rect"/>
+      <remap from="/visual_slam/camera_info_1" to="/$(var camera_name)/zed_node/right/camera_info"/>
     </composable_node>
 
   </node_container>

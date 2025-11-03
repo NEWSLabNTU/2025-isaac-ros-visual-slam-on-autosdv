@@ -1,0 +1,8 @@
+{
+    "camera_model": "zedxm",
+    "camera_frame": "zedxm_base_link",
+    "camera_resolution": {
+        "width": 960,
+        "height": 600
+    }
+}
