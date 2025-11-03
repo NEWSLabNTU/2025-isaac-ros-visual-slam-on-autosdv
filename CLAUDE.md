@@ -22,10 +22,12 @@ slam/
 │   │   ├── launch/
 │   │   │   ├── visual_slam.launch.xml        # Basic visual SLAM (rosbag)
 │   │   │   └── zedxm_visual_slam.launch.xml  # ZED X Mini camera
-│   │   └── config/
-│   │       ├── quickstart_interface_specs.json       # For rosbag
-│   │       └── zedxm_quickstart_interface_specs.json # ZED X Mini: 960x600
-│   └── zed-ros2-wrapper/   # ZED SDK ROS2 wrapper (git submodule)
+│   │   ├── config/
+│   │   │   ├── quickstart_interface_specs.json       # For rosbag
+│   │   │   └── zedxm_quickstart_interface_specs.json # ZED X Mini: 960x600
+│   │   └── rviz/
+│   │       └── isaac_zedxm.rviz              # Custom RViz configuration
+│   └── zed-ros2-wrapper/   # ZED SDK ROS2 wrapper (git submodule, modified)
 ├── assets/                  # Downloaded SLAM assets (rosbag, configs)
 ├── play_log/                # Detailed logs from play-zedxm runs
 └── build/, install/, log/   # ROS2 workspace artifacts
@@ -48,7 +50,7 @@ Uses **Just** (modern Make alternative):
 ### Important Files
 
 **justfile** - Main automation:
-- `just setup` - System setup (Ubuntu version check, ROS install)
+- `just setup` - System setup (Ubuntu check, ROS install, dependencies, downloads assets)
 - `just build` - Builds workspace (Release mode)
 - `just clean` - Removes build artifacts
 - `just launch` - Launches visual SLAM with rosbag (auto-starts RViz if DISPLAY set)
@@ -56,7 +58,7 @@ Uses **Just** (modern Make alternative):
 - `just play` - Plays rosbag with topic remapping
 - `just play-zedxm` - Runs launch-zedxm with detailed logging to `play_log/`
 - `just rosdep-update` - Updates rosdep database
-- `just download-assets` - Downloads SLAM assets
+- `just download-assets` - Downloads SLAM assets (automatically run by setup)
 
 **.envrc** (direnv):
 - Sources `/opt/ros/humble/setup.bash` when entering directory
@@ -94,10 +96,12 @@ Uses **Just** (modern Make alternative):
 ## Current State
 
 ### What Works
-- ZED X Mini + Isaac ROS Visual SLAM integration
+- ZED X Mini + Isaac ROS Visual SLAM integration (fully operational)
 - Grayscale stereo images at 960x600 @ 15Hz
 - NITROS zero-copy communication in composable nodes
 - ImageFormatConverter: mono8 → nitros_image_mono8
+- Visual SLAM odometry output at ~14.8 Hz
+- BEST_EFFORT QoS for real-time performance
 - RViz auto-start based on DISPLAY environment
 - Network configuration validation on direnv load
 - Detailed play logs with timestamps
@@ -106,11 +110,11 @@ Uses **Just** (modern Make alternative):
 
 **ZED X Mini Camera**:
 - Resolution: 960x600 @ 15Hz (downscaled 2x from native 1920x1200)
-- Topics:
+- Topics (following image_pipeline convention):
   - `/zedxm/zed_node/left_gray/image_rect_gray` (mono8)
+  - `/zedxm/zed_node/left_gray/camera_info` (calibration)
   - `/zedxm/zed_node/right_gray/image_rect_gray` (mono8)
-  - `/zedxm/zed_node/left/camera_info`
-  - `/zedxm/zed_node/right/camera_info`
+  - `/zedxm/zed_node/right_gray/camera_info` (calibration)
 - Frames:
   - `zedxm_camera_center` (base_frame)
   - `zedxm_left_camera_optical_frame`
@@ -130,6 +134,29 @@ ZED Camera (mono8) → ImageFormatConverterNode (nitros_image_mono8) → Visual 
 ```
 
 All nodes run in same `component_container` for zero-copy NITROS communication.
+
+**QoS Configuration** (BEST_EFFORT for real-time performance):
+- **ZED Camera**: Modified source code (`src/zed-ros2-wrapper/zed_components/src/zed_camera/src/zed_camera_component_main.cpp:69`)
+  ```cpp
+  mQos(rclcpp::QoS(QOS_QUEUE_SIZE).best_effort())
+  ```
+  Sets ALL ZED topics (images, camera_info) to BEST_EFFORT
+
+- **ImageFormatConverter**: Launch file parameters (`zedxm_visual_slam.launch.xml:25-26, 36-37`)
+  ```xml
+  <param name="input_qos" value="SENSOR_DATA"/>
+  <param name="output_qos" value="SENSOR_DATA"/>
+  ```
+  SENSOR_DATA is a ROS 2 preset profile using BEST_EFFORT reliability
+
+- **Visual SLAM**: Subscribes with BEST_EFFORT by default (no configuration needed)
+
+**Topic Remapping** (Critical for initialization):
+Camera_info topics MUST follow image_pipeline convention (same namespace as images):
+```xml
+<remap from="/visual_slam/camera_info_0" to="/zedxm/zed_node/left_gray/camera_info"/>
+<remap from="/visual_slam/camera_info_1" to="/zedxm/zed_node/right_gray/camera_info"/>
+```
 
 ## Important Technical Details
 
@@ -172,7 +199,7 @@ See: https://autowarefoundation.github.io/autoware-documentation/main/installati
 ### First Time Setup
 ```bash
 direnv allow              # Enable .envrc
-just setup                # Install dependencies
+just setup                # Install dependencies and download assets
 just build                # Build workspace
 ```
 
@@ -184,7 +211,7 @@ just play-zedxm           # Launch with detailed logs in play_log/
 
 ### Rosbag Testing
 ```bash
-just download-assets      # Get test rosbag
+# Assets are already downloaded during setup
 just launch               # Terminal 1: Start Visual SLAM
 just play                 # Terminal 2: Play rosbag
 ```
@@ -217,10 +244,35 @@ ros2 pkg list | grep isaac    # Verify Isaac ROS installed
 /usr/local/zed/tools/ZED_Diagnostic    # Run ZED diagnostics
 ```
 
-### Visual SLAM not tracking
-- Requires camera motion to initialize
-- Move camera slowly with both rotation and translation
-- Ensure sufficient visual features in environment
+### Visual SLAM not producing odometry
+
+**Initialization Requirements** (all must be met):
+1. **Synchronized stereo images** - Both cameras publishing at same rate
+2. **Camera_info messages** - Valid calibration for both cameras in correct namespaces
+3. **Minimum synchronized frames** - Default `min_num_images = 2`
+4. **Sufficient visual features** - Camera must see textured environment (not blank walls)
+5. **Camera motion** - Move camera with rotation + translation to initialize
+
+**Common Issues**:
+- Wrong camera_info topic remapping (must match image namespaces: `left_gray/camera_info`)
+- QoS mismatch between publishers and subscribers (use BEST_EFFORT throughout)
+- IMU fusion enabled but no IMU data (disable with `enable_imu_fusion: False`)
+- Camera pointing at featureless surface during initialization
+
+**Verification Steps**:
+```bash
+# Check if Visual SLAM is receiving images
+ros2 topic hz /left/image_rect /right/image_rect
+
+# Check if camera_info is being received
+ros2 topic info /zedxm/zed_node/left_gray/camera_info -v
+
+# Check Visual SLAM subscription status
+ros2 node info /visual_slam_node | grep camera_info
+
+# Monitor odometry output
+ros2 topic hz /visual_slam/tracking/odometry
+```
 
 ### "Could not negotiate" warnings
 - Normal during startup while NITROS negotiates formats
@@ -241,4 +293,4 @@ ros2 pkg list | grep isaac    # Verify Isaac ROS installed
 
 ---
 
-**Last Updated**: 2025-11-04 | Isaac ROS 3.2 | ZED SDK 5.0.7 | ROS 2 Humble
+**Last Updated**: 2025-11-04 | Isaac ROS 3.2 | ZED SDK 5.0.7 | ROS 2 Humble | BEST_EFFORT QoS
