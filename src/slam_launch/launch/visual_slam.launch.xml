@@ -1,49 +1,32 @@
 <?xml version="1.0"?>
 <launch>
   <!-- Launch arguments -->
-  <arg name="rectified_images" default="False" description="Whether input images are rectified"/>
-  <arg name="base_frame" default="base_link" description="Base frame for odometry"/>
-  <arg name="camera_optical_frames" default="['front_stereo_camera_left_optical', 'front_stereo_camera_right_optical']" description="List of camera optical frames"/>
+  <arg name="base_frame" default="zedxm_camera_center" description="Base frame for odometry"/>
+  <arg name="camera_optical_frames" default="['zedxm_left_camera_optical_frame', 'zedxm_right_camera_optical_frame']" description="List of camera optical frames"/>
   <arg name="start_rviz" default="false" description="Start RViz for visualization"/>
+  <arg name="camera_name" default="zedxm" description="Camera name for namespacing"/>
 
   <!-- Container with composable nodes -->
   <node_container pkg="rclcpp_components" exec="component_container" name="visual_slam_launch_container" namespace="">
 
-    <!-- Left image format converter -->
-    <composable_node pkg="isaac_ros_image_proc" plugin="nvidia::isaac_ros::image_proc::ImageFormatConverterNode" name="image_format_node_left">
-      <param name="image_width" value="1920"/>
-      <param name="image_height" value="1200"/>
-      <param name="encoding_desired" value="mono8"/>
-      <remap from="image_raw" to="left/image_rect"/>
-      <remap from="image" to="left/image_rect_mono"/>
-    </composable_node>
-
-    <!-- Right image format converter -->
-    <composable_node pkg="isaac_ros_image_proc" plugin="nvidia::isaac_ros::image_proc::ImageFormatConverterNode" name="image_format_node_right">
-      <param name="image_width" value="1920"/>
-      <param name="image_height" value="1200"/>
-      <param name="encoding_desired" value="mono8"/>
-      <remap from="image_raw" to="right/image_rect"/>
-      <remap from="image" to="right/image_rect_mono"/>
-    </composable_node>
-
-    <!-- Visual SLAM node -->
+    <!-- Visual SLAM node - Direct NITROS connection to ZED camera -->
     <composable_node pkg="isaac_ros_visual_slam" plugin="nvidia::isaac_ros::visual_slam::VisualSlamNode" name="visual_slam_node">
-      <param name="rectified_images" value="$(var rectified_images)"/>
+      <param name="rectified_images" value="True"/>
       <param name="enable_slam_visualization" value="True"/>
       <param name="enable_landmarks_view" value="True"/>
       <param name="enable_observations_view" value="True"/>
       <param name="camera_optical_frames" value="$(var camera_optical_frames)"/>
       <param name="base_frame" value="$(var base_frame)"/>
-      <remap from="/visual_slam/image_0" to="left/image_rect_mono"/>
-      <remap from="/visual_slam/camera_info_0" to="left/camera_info_rect"/>
-      <remap from="/visual_slam/image_1" to="right/image_rect_mono"/>
-      <remap from="/visual_slam/camera_info_1" to="right/camera_info_rect"/>
+      <!-- Direct NITROS connection to ZED camera topics for zero-copy GPU transfer -->
+      <remap from="/visual_slam/image_0" to="/$(var camera_name)/zed_node/left_gray/image_rect_gray"/>
+      <remap from="/visual_slam/camera_info_0" to="/$(var camera_name)/zed_node/left_gray/camera_info"/>
+      <remap from="/visual_slam/image_1" to="/$(var camera_name)/zed_node/right_gray/image_rect_gray"/>
+      <remap from="/visual_slam/camera_info_1" to="/$(var camera_name)/zed_node/right_gray/camera_info"/>
     </composable_node>
 
   </node_container>
 
   <!-- RViz visualization -->
   <node pkg="rviz2" exec="rviz2" name="rviz2" if="$(var start_rviz)"
-        args="-d $(find-pkg-share isaac_ros_visual_slam)/rviz/default.cfg.rviz"/>
+        args="-d $(find-pkg-share slam_launch)/rviz/isaac_zedxm.rviz"/>
 </launch>
