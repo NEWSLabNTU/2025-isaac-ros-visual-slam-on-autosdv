@@ -35,13 +35,10 @@ RViz starts automatically if `DISPLAY` is set.
 ### Check Data Flow
 
 ```bash
-# Camera images (should show ~15 Hz)
+# Camera images (should show ~30 Hz)
 ros2 topic hz /zedxm/zed_node/left_gray/image_rect_gray
 
-# Converted images (should show ~15 Hz)
-ros2 topic hz /left/image_rect
-
-# SLAM odometry (should show ~14.8 Hz)
+# SLAM odometry (should show ~30 Hz)
 ros2 topic hz /visual_slam/tracking/odometry
 ```
 
