@@ -100,18 +100,18 @@ install-deps: check-sudo rosdep-update
 download-assets:
     @bash scripts/download_assets.sh
 
-play-bag:
-    #!/usr/bin/env bash
-    source /opt/ros/humble/setup.bash
-    ros2 bag play assets/isaac_ros_visual_slam/quickstart_bag --remap \
-        /front_stereo_camera/left/image_raw:=/left/image_rect \
-        /front_stereo_camera/left/camera_info:=/left/camera_info_rect \
-        /front_stereo_camera/right/image_raw:=/right/image_rect \
-        /front_stereo_camera/right/camera_info:=/right/camera_info_rect \
-        /back_stereo_camera/left/image_raw:=/rear_left/image_rect \
-        /back_stereo_camera/left/camera_info:=/rear_left/camera_info_rect \
-        /back_stereo_camera/right/image_raw:=/rear_right/image_rect \
-        /back_stereo_camera/right/camera_info:=/rear_right/camera_info_rect
+# play-bag:
+#     #!/usr/bin/env bash
+#     source /opt/ros/humble/setup.bash
+#     ros2 bag play assets/isaac_ros_visual_slam/quickstart_bag --remap \
+#         /front_stereo_camera/left/image_raw:=/left/image_rect \
+#         /front_stereo_camera/left/camera_info:=/left/camera_info_rect \
+#         /front_stereo_camera/right/image_raw:=/right/image_rect \
+#         /front_stereo_camera/right/camera_info:=/right/camera_info_rect \
+#         /back_stereo_camera/left/image_raw:=/rear_left/image_rect \
+#         /back_stereo_camera/left/camera_info:=/rear_left/camera_info_rect \
+#         /back_stereo_camera/right/image_raw:=/rear_right/image_rect \
+#         /back_stereo_camera/right/camera_info:=/rear_right/camera_info_rect
 
 launch:
     #!/usr/bin/env bash
