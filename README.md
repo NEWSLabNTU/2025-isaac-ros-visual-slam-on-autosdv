@@ -12,7 +12,7 @@ Configured for real-time performance with BEST_EFFORT QoS.
 - ZED SDK 5.0.7+
 - Isaac ROS packages (APT)
 
-## Quick Start
+## Installation
 
 ```bash
 # Install Just build tool
@@ -23,12 +23,37 @@ just setup
 
 # Build workspace
 just build
+```
 
-# Launch ZED X Mini + Visual SLAM
+## Quick Start
+
+### Live Camera
+
+Run visual SLAM with ZED X Mini and record data:
+
+```bash
+# Terminal 1: Record rosbag
+ros2 bag record $(cat docs/record_topics.txt)
+
+# Terminal 2: Launch ZED X Mini + Visual SLAM
 just launch-zedxm
 ```
 
-RViz starts automatically if `DISPLAY` is set.
+### Replay Recorded Data
+
+Play back a rosbag for testing or analysis:
+
+```bash
+# Terminal 1: Launch Visual SLAM only
+just launch
+
+# Terminal 2: Replay rosbag
+ros2 bag play \
+    --topics $(cat docs/replay_topics.txt) \
+    rosbag2_2025_11_05-16_54_25/
+```
+
+Download example rosbag: https://newslabn.csie.ntu.edu.tw/drive/d/f/15gzknb3bTyhsyzhOAgokJcroCHYvIIw
 
 ## Verifying SLAM Operation
 
@@ -64,14 +89,7 @@ ros2 topic info /zedxm/zed_node/left_gray/image_rect_gray -v | grep Reliability
 ros2 topic info /left/image_rect -v | grep Reliability
 ```
 
-### Expected Output
-
-If working correctly:
-- Camera publishes grayscale images at 15 Hz
-- ImageFormatConverter outputs at ~15 Hz
-- Visual SLAM publishes odometry at ~14.8 Hz
-- All topics use BEST_EFFORT QoS
-- RViz shows camera pose and landmarks
+## Expected Output
 
 ## ZED X Mini Integration - Critical Steps
 
@@ -150,6 +168,20 @@ just play-bag         # Play rosbag data
 ```
 
 ## Troubleshooting
+
+### ZED Camera Video Not Shown in RViz
+
+It can be caused by hardware connectivity or driver configuration issues. Run this command to check the camera availability and driver status on the system.
+
+```sh
+ZED_Diagnostic
+```
+
+If the camera is detected by the diagnostic system, run the ZED tool to check if can read stereo videos from the camera.
+
+```sh
+ZED_Explorer
+```
 
 ### SLAM Not Publishing Odometry
 
