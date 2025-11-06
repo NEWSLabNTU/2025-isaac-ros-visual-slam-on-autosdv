@@ -9,15 +9,24 @@ Configured for real-time performance with BEST_EFFORT QoS.
 - Ubuntu 22.04
 - NVIDIA Jetson or GPU with CUDA support
 - ROS 2 Humble
-- ZED SDK 5.0.7+
-- Isaac ROS packages (APT)
+- just
+
+  ```sh
+  cargo install just
+  ```
+
+You can optionally use ZED cameras in the project. To enable it,
+- Download and install ZED SDK 5.0.7+ from [here](https://www.stereolabs.com/en-tw/developers/release/5.0).
+- Pull the ZED ROS wrapper source code
+
+  ```sh
+  git submodule update --init --recursive src/zed-ros2-wrapper/
+  ```
+
 
 ## Installation
 
 ```bash
-# Install Just build tool
-cargo install just
-
 # Setup system (installs ROS, dependencies, downloads assets)
 just setup
 
