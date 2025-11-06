@@ -66,6 +66,9 @@ install-isaac-repo:
     echo "deb https://isaac.download.nvidia.com/isaac-ros/release-3 $(lsb_release -cs) release-3.0" | sudo tee -a /etc/apt/sources.list.d/isaac.list
     sudo apt-get update
 
+install-isaac-vslam:
+    sudo apt install -y ros-humble-isaac-ros-visual-slam ros-humble-isaac-ros-visual-slam-interfaces
+
 rosdep-update:
     #!/usr/bin/env bash
     set -e
@@ -80,7 +83,7 @@ rosdep-update:
 
     rosdep update
 
-install-deps: check-sudo rosdep-update
+install-rosdeps: check-sudo rosdep-update
     #!/usr/bin/env bash
     set -e
 
@@ -185,8 +188,9 @@ setup: check-sudo check-system
     fi
 
     [ ! -d /opt/ros/humble ] && just install-ros
-    ! grep -rq "isaac" /etc/apt/sources.list.d/ 2>/dev/null && just install-isaac-repo
-    just install-deps
+    ! grep -rq "isaac" /etc/apt/sources.list.d/isaac.list 2>/dev/null && just install-isaac-repo
+    just install-isaac-vslam
+    just install-rosdeps
     just download-assets
 
     echo ""
