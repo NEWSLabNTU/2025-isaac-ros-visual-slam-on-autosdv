@@ -23,7 +23,6 @@ check-system:
     fi
 
     [ -d /opt/ros/humble ] || MISSING+=("ros-humble")
-    grep -rq "isaac" /etc/apt/sources.list.d/ 2>/dev/null || MISSING+=("isaac-repo")
     command -v curl &> /dev/null || MISSING+=("curl")
     command -v jq &> /dev/null || MISSING+=("jq")
     command -v tar &> /dev/null || MISSING+=("tar")
@@ -63,17 +62,9 @@ install-isaac-repo:
     #!/usr/bin/env bash
     set -e
 
-    grep -rq "isaac" /etc/apt/sources.list.d/ 2>/dev/null && exit 0
-
-    echo "Isaac ROS APT repository requires manual setup."
-    echo "Follow: https://nvidia-isaac-ros.github.io/v/release-3.2/getting_started/isaac_apt_repository.html"
-    echo ""
-    echo "Example:"
-    echo "  wget -qO - https://isaac-ros.github.io/isaac-ros/KEY.gpg | sudo apt-key add -"
-    echo "  echo 'deb https://isaac-ros.github.io/isaac-ros/ubuntu/jammy jammy main' | sudo tee /etc/apt/sources.list.d/isaac-ros.list"
-    echo "  sudo apt update"
-    echo ""
-    read -p "Press Enter after adding the repository..."
+    wget -qO - https://isaac.download.nvidia.com/isaac-ros/repos.key | sudo apt-key add -
+    echo "deb https://isaac.download.nvidia.com/isaac-ros/release-3 $(lsb_release -cs) release-3.0" | sudo tee -a /etc/apt/sources.list.d/isaac.list
+    sudo apt-get update
 
 rosdep-update:
     #!/usr/bin/env bash
