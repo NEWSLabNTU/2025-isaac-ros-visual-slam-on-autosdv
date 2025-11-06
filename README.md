@@ -53,7 +53,7 @@ ros2 bag play \
     rosbag2_2025_11_05-16_54_25/
 ```
 
-Download example rosbag: https://newslabn.csie.ntu.edu.tw/drive/d/f/15gzknb3bTyhsyzhOAgokJcroCHYvIIw
+Download example rosbag [here](https://newslabn.csie.ntu.edu.tw/drive/d/s/15gzknb3bTyhsyzhOAgokJcroCHYvIIw/ijNJaQ2II8Iy2B8faVji1QhMmmr3Yp3p-WL3g69Gctww)
 
 ## Verifying SLAM Operation
 
