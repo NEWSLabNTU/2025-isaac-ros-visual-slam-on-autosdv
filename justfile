@@ -127,6 +127,12 @@ launch-zedxm:
         ros2 launch slam_launch zedxm_visual_slam.launch.xml start_rviz:=false
     fi
 
+record:
+    #!/usr/bin/env bash
+    source /opt/ros/humble/setup.bash
+    source install/setup.bash
+    ros2 bag record $(cat docs/record_topics.txt)
+
 play:
     #!/usr/bin/env bash
     source /opt/ros/humble/setup.bash
