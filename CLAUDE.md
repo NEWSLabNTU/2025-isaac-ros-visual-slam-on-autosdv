@@ -91,16 +91,15 @@ Uses **Just** (modern Make alternative):
 - ZED SDK from Stereolabs (not in APT)
 
 ### Git Submodules
-- `zed-ros2-wrapper` - ZED camera ROS2 driver
+- `zed-ros2-wrapper` - ZED camera ROS2 driver (v5.1, modified for BEST_EFFORT QoS)
 
 ## Current State
 
 ### What Works
 - ZED X Mini + Isaac ROS Visual SLAM integration (fully operational)
-- Grayscale stereo images at 960x600 @ 15Hz
-- NITROS zero-copy communication in composable nodes
-- ImageFormatConverter: mono8 → nitros_image_mono8
-- Visual SLAM odometry output at ~14.8 Hz
+- Grayscale stereo images at 960x600 @ 30Hz
+- Direct ROS2 image transport (ZED → Visual SLAM)
+- Visual SLAM odometry output at ~30 Hz
 - BEST_EFFORT QoS for real-time performance
 - RViz auto-start based on DISPLAY environment
 - Network configuration validation on direnv load
@@ -108,17 +107,21 @@ Uses **Just** (modern Make alternative):
 
 ### Configuration
 
-**ZED X Mini Camera**:
-- Resolution: 960x600 @ 15Hz (downscaled 2x from native 1920x1200)
-- Topics (following image_pipeline convention):
-  - `/zedxm/zed_node/left_gray/image_rect_gray` (mono8)
-  - `/zedxm/zed_node/left_gray/camera_info` (calibration)
-  - `/zedxm/zed_node/right_gray/image_rect_gray` (mono8)
-  - `/zedxm/zed_node/right_gray/camera_info` (calibration)
+**ZED X Mini Camera** (`src/slam_launch/config/zedxm.yaml`):
+- Resolution: SVGA 960x600 @ 30Hz
+- Optimized config disables GPU-heavy features for 30 FPS:
+  - `depth_mode: 'NONE'` - No depth processing (Visual SLAM doesn't need it)
+  - `pos_tracking_enabled: false` - Visual SLAM does its own tracking
+  - `publish_rgb: false` - Only grayscale needed
+- Topics (ZED wrapper v5.1 naming):
+  - `/zedxm/zed_node/left/gray/rect/image` (mono8)
+  - `/zedxm/zed_node/left/gray/rect/camera_info`
+  - `/zedxm/zed_node/right/gray/rect/image` (mono8)
+  - `/zedxm/zed_node/right/gray/rect/camera_info`
 - Frames:
   - `zedxm_camera_center` (base_frame)
-  - `zedxm_left_camera_optical_frame`
-  - `zedxm_right_camera_optical_frame`
+  - `zedxm_left_camera_frame_optical`
+  - `zedxm_right_camera_frame_optical`
 
 **Visual SLAM Parameters** (`zedxm_visual_slam.launch.xml`):
 - `rectified_images`: True (ZED publishes rectified images)
@@ -130,32 +133,27 @@ Uses **Just** (modern Make alternative):
 
 **Image Pipeline**:
 ```
-ZED Camera (mono8) → ImageFormatConverterNode (nitros_image_mono8) → Visual SLAM
+ZED Camera (mono8) → Visual SLAM
 ```
 
-All nodes run in same `component_container` for zero-copy NITROS communication.
+ZED node runs in `zed_container`, Visual SLAM in `visual_slam_launch_container`.
+Communication via standard ROS2 messages with BEST_EFFORT QoS.
 
 **QoS Configuration** (BEST_EFFORT for real-time performance):
-- **ZED Camera**: Modified source code (`src/zed-ros2-wrapper/zed_components/src/zed_camera/src/zed_camera_component_main.cpp:69`)
+- **ZED Camera**: Modified source code (`src/zed-ros2-wrapper/zed_components/src/zed_camera/src/zed_camera_component_main.cpp:68`)
   ```cpp
   mQos(rclcpp::QoS(QOS_QUEUE_SIZE).best_effort())
   ```
   Sets ALL ZED topics (images, camera_info) to BEST_EFFORT
 
-- **ImageFormatConverter**: Launch file parameters (`zedxm_visual_slam.launch.xml:25-26, 36-37`)
-  ```xml
-  <param name="input_qos" value="SENSOR_DATA"/>
-  <param name="output_qos" value="SENSOR_DATA"/>
-  ```
-  SENSOR_DATA is a ROS 2 preset profile using BEST_EFFORT reliability
-
 - **Visual SLAM**: Subscribes with BEST_EFFORT by default (no configuration needed)
 
-**Topic Remapping** (Critical for initialization):
-Camera_info topics MUST follow image_pipeline convention (same namespace as images):
+**Topic Remapping** (`zedxm_visual_slam.launch.xml`):
 ```xml
-<remap from="/visual_slam/camera_info_0" to="/zedxm/zed_node/left_gray/camera_info"/>
-<remap from="/visual_slam/camera_info_1" to="/zedxm/zed_node/right_gray/camera_info"/>
+<remap from="/visual_slam/image_0" to="/zedxm/zed_node/left/gray/rect/image"/>
+<remap from="/visual_slam/camera_info_0" to="/zedxm/zed_node/left/gray/rect/camera_info"/>
+<remap from="/visual_slam/image_1" to="/zedxm/zed_node/right/gray/rect/image"/>
+<remap from="/visual_slam/camera_info_1" to="/zedxm/zed_node/right/gray/rect/camera_info"/>
 ```
 
 ## Important Technical Details
@@ -262,13 +260,13 @@ ros2 pkg list | grep isaac    # Verify Isaac ROS installed
 **Verification Steps**:
 ```bash
 # Check if Visual SLAM is receiving images
-ros2 topic hz /left/image_rect /right/image_rect
+ros2 topic hz /zedxm/zed_node/left/gray/rect/image
 
 # Check if camera_info is being received
-ros2 topic info /zedxm/zed_node/left_gray/camera_info -v
+ros2 topic info /zedxm/zed_node/left/gray/rect/camera_info -v
 
 # Check Visual SLAM subscription status
-ros2 node info /visual_slam_node | grep camera_info
+ros2 node info /visual_slam_node
 
 # Monitor odometry output
 ros2 topic hz /visual_slam/tracking/odometry
@@ -280,8 +278,15 @@ ros2 topic hz /visual_slam/tracking/odometry
 
 ### Color image errors
 - Visual SLAM only supports mono8 grayscale
-- Do NOT use `image_rect_color` topics
-- Use `left_gray/image_rect_gray` and `right_gray/image_rect_gray`
+- Do NOT use color image topics
+- Use `left/gray/rect/image` and `right/gray/rect/image`
+
+### Low framerate (15 FPS instead of 30 FPS)
+If Visual SLAM reports frame deltas above threshold (~34ms for 30 FPS target):
+- Check `depth_mode` in config - should be `'NONE'` for Visual SLAM
+- Disable ZED positional tracking (`pos_tracking_enabled: false`)
+- Disable unnecessary publishers (`publish_rgb`, `publish_raw`, `publish_point_cloud`)
+- The default `NEURAL_LIGHT` depth mode is GPU-intensive and limits framerate
 
 ## References
 
@@ -293,4 +298,4 @@ ros2 topic hz /visual_slam/tracking/odometry
 
 ---
 
-**Last Updated**: 2025-11-04 | Isaac ROS 3.2 | ZED SDK 5.0.7 | ROS 2 Humble | BEST_EFFORT QoS
+**Last Updated**: 2026-01-07 | Isaac ROS 3.2 | ZED Wrapper 5.1 | ROS 2 Humble | 30 FPS optimized
