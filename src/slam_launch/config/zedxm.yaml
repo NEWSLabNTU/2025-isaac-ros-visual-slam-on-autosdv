@@ -1,10 +1,26 @@
 # Custom ZED X Mini Configuration for Isaac ROS Visual SLAM
 # Overrides default parameters for optimal SLAM performance
+# Optimized to disable heavy GPU features (depth, tracking) to achieve 30 FPS
 ---
 /**:
     ros__parameters:
         general:
-            grab_resolution: 'SVGA' # Native 960x600 @ 30Hz (meets Isaac SLAM 30Hz minimum requirement)
+            grab_resolution: 'SVGA' # 960x600 @ 30Hz
             grab_frame_rate: 30 # ZED SDK internal grabbing rate
-            pub_resolution: 'NATIVE' # Publish at native grab resolution (no downscaling)
-            pub_frame_rate: 30.0 # Publish at full frame rate (no throttling)
+            pub_resolution: 'NATIVE' # Publish at native grab resolution
+            pub_frame_rate: 30.0 # Target 30 FPS publishing
+
+        video:
+            publish_gray: true # Required for Visual SLAM (mono8 images)
+            publish_left_right: true # Required for stereo Visual SLAM
+            publish_rgb: false # Not needed for Visual SLAM
+            publish_raw: false # Not needed (SLAM uses rectified)
+            publish_stereo: false # Not needed (side-by-side format)
+
+        depth:
+            depth_mode: 'NONE' # CRITICAL: Disable depth to free GPU for 30 FPS
+            publish_depth_map: false
+            publish_point_cloud: false
+
+        pos_tracking:
+            pos_tracking_enabled: false # Visual SLAM does its own tracking

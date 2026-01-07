@@ -10,6 +10,8 @@ Panels:
         - /Loop closure1/Topic1
         - /Localizer1/Localizer Map1
         - /Odometry1/Shape1
+        - /Front Left Image1
+        - /Front Right Image1
       Splitter Ratio: 0.5261569619178772
     Tree Height: 338
   - Class: rviz_common/Selection
@@ -62,11 +64,11 @@ Visualization Manager:
           Value: true
         zedxm_left_camera_frame:
           Value: true
-        zedxm_left_camera_optical_frame:
+        zedxm_left_camera_frame_optical:
           Value: true
         zedxm_right_camera_frame:
           Value: true
-        zedxm_right_camera_optical_frame:
+        zedxm_right_camera_frame_optical:
           Value: true
       Marker Scale: 1
       Name: TF
@@ -76,14 +78,13 @@ Visualization Manager:
       Tree:
         map:
           odom:
-            zedxm_camera_link:
-              zedxm_camera_center:
-                zedxm_left_camera_frame:
-                  zedxm_left_camera_optical_frame:
-                    {}
-                zedxm_right_camera_frame:
-                  zedxm_right_camera_optical_frame:
-                    {}
+            zedxm_camera_center:
+              zedxm_left_camera_frame:
+                zedxm_left_camera_frame_optical:
+                  {}
+              zedxm_right_camera_frame:
+                zedxm_right_camera_frame_optical:
+                  {}
       Update Interval: 0
       Value: true
     - Class: rviz_default_plugins/Marker
@@ -422,7 +423,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /zedxm/zed_node/left_gray/image_rect_gray
+        Value: /zedxm/zed_node/left/gray/rect/image
       Value: true
     - Class: rviz_default_plugins/Image
       Enabled: true
@@ -436,7 +437,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /zedxm/zed_node/right_gray/image_rect_gray
+        Value: /zedxm/zed_node/right/gray/rect/image
       Value: true
   Enabled: true
   Global Options:
