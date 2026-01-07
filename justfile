@@ -139,9 +139,9 @@ play:
     source ~/ros-launch-perf/install/setup.bash
     source install/setup.bash
     if [ -n "$DISPLAY" ]; then
-        play_launch launch slam_launch visual_slam.launch.xml start_rviz:=true
+        play_launch launch --web-ui slam_launch visual_slam.launch.xml start_rviz:=true
     else
-        play_launch launch slam_launch visual_slam.launch.xml start_rviz:=false
+        play_launch launch --web-ui slam_launch visual_slam.launch.xml start_rviz:=false
     fi
 
 play-zedxm:
@@ -150,9 +150,9 @@ play-zedxm:
     source ~/ros-launch-perf/install/setup.bash
     source install/setup.bash
     if [ -n "$DISPLAY" ]; then
-        play_launch launch slam_launch zedxm_visual_slam.launch.xml start_rviz:=true
+        play_launch launch --web-ui slam_launch zedxm_visual_slam.launch.xml start_rviz:=true
     else
-        play_launch launch slam_launch zedxm_visual_slam.launch.xml start_rviz:=false
+        play_launch launch --web-ui slam_launch zedxm_visual_slam.launch.xml start_rviz:=false
     fi
 
 build:
